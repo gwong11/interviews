@@ -3,11 +3,17 @@
 import pandas as pd
 import re
 import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+np.random.seed(9876789)
 
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', None)
 pd.set_option("max_rows", None)
 pd.set_option('display.float_format', lambda x: '%.2f' % x)
+
+sns.set_theme(style="ticks", palette="pastel")
 
 def convert_to_seconds(elapsed_time):
     elapsed_time_split = elapsed_time.split(':')
@@ -46,8 +52,37 @@ def new_describe(df):
     df1 = df.describe()
     df1.loc["range"] = df1.loc['max'] - df1.loc['min']
     df1.loc["10%"] = df.quantile(.1)
+    df1.loc["90%"] = df.quantile(.9)
+
+    reorder_list = ["count", "mean", "std", "min", "10%", "25%", "50%", "75%", "90%", "max", "range"]
+    #df1 = df1.reindex(reorder_list)
+    df1 = df1.loc[reorder_list]
 
     return df1
+
+def new_describe2(df):
+    df1 = df.describe()
+    df1["range"] = df1['max'] - df1['min']
+    df1["10%"] = df.quantile(.1)
+    df1["90%"] = df.quantile(.9)
+
+    cols = df1.columns.to_list()
+    cols = reorder_list(cols, [0,1,2,3,9,4,5,6,10,7,8])
+    df1 = df1[cols]
+
+    return df1
+
+def reorder_list(data, order):
+    return [data[i] for i in order]
+
+def boxplot(data, x, y, order, title, savefn):
+    plt.figure()
+    ax = sns.boxplot(x=x, y=y, palette=["m", "g"], order=order, data=data)
+    sns.despine(offset=10, trim=True)
+    ax.set_title(title)
+    plt.tight_layout()
+    plt.savefig(savefn)
+    #plt.show()
 
 def main(file_male, file_female):
     male_df = pd.read_csv(file_male, sep='\t', lineterminator='\r')
@@ -140,9 +175,27 @@ def main(file_male, file_female):
     print(new_describe(female_df))
     print()
 
+    print("---------Descriptive Statistics (Net Tim(s)) based on division--------")
+    print(new_describe2(male_df.groupby('Div')['Net Tim(s)']))
+    print()
+    print(new_describe2(female_df.groupby('Div')['Net Tim(s)']))
+    print()
+
 
     print("---------Performance of Chris Doe--------")
     print(male_df[male_df['Name'] == 'Chris Doe'])
+    new_df = new_describe2(male_df.groupby('Div')['Net Tim(s)'])['90%'].reset_index()
+    div = male_df[male_df['Name'] == 'Chris Doe']['Div'].to_list()[0]
+    net_tim_s = male_df[male_df['Name'] == 'Chris Doe']['Net Tim(s)'].to_list()[0]
+    percentile_90_div = new_df[new_df['Div'] == div]['90%'].to_list()[0]
+    print("90 percentile (same division): " + str(round(percentile_90_div/60,2)) + " mins.")
+    print("Chris's Net Time: " + str(round(net_tim_s/60,2)) + " mins.")
+    if (percentile_90_div > net_tim_s):
+        diff_time = percentile_90_div - net_tim_s
+        print("Time separates from top 10 percentile (same division) - bottom 90%: " + str(round(diff_time/60,2)) + " mins.")
+    else:
+        diff_time = net_tim_s - percentile_90_div
+        print("Time separates from top 10 percentile (same division) - top 10%: " + str(round(diff_time/60,2)) + " mins.")
     print()
 
     print("---------Mode Statistics--------")
@@ -176,13 +229,52 @@ def main(file_male, file_female):
     print(female_df.groupby("Div")[["Net Tim(s)"]].count())
     print()
 
+    print("---------Correlation Matrix--------")
+    print(male_df.corr())
+    print()
+    print(female_df.corr())
+    print()
+
     print("---------Plots--------")
     print()
-    print("---------Plot Gun Tim(s), Net Tim(s), and Diff Tim(s)--------")
-    male_df['Gun Tim(s)'].plot()
-    male_df['Net Tim(s)'].plot(color='red')
-    male_df['Diff Tim(s)'].plot(color='green')
-    plt.show()
+    boxplot(male_df, 'Div', 'Net Tim(s)', ['A','B','C','D','E','F','G','H','I'], "Boxplot for Male Net Tim(s)", "male_boxplot_net_time.png")
+    boxplot(male_df, 'Div', 'Pace(s)', ['A','B','C','D','E','F','G','H','I'], "Boxplot for Male Pace(s)", "male_boxplot_pace_time.png")
+    boxplot(female_df, 'Div', 'Net Tim(s)', ['A','B','C','D','E','F','G','H'], "Boxplot for Female Net Tim(s)", "female_boxplot_net_time.png")
+    boxplot(female_df, 'Div', 'Pace(s)', ['A','B','C','D','E','F','G','H'], "Boxplot for Female Pace(s)", "female_boxplot_pace_time.png")
+
+    plt.figure()
+    fig, ax = plt.subplots(2, 3)
+    fig.suptitle("Male 2006 Pikes Peak 10K Race")
+    sns.distplot(male_df["Ag"], kde=True, color='blue', label='Age',
+             ax=ax[0, 0])
+    sns.distplot(male_df['Gun Tim(s)'], hist=True, kde=True, color='blue', label='Gun Tim(s)',
+             ax=ax[0, 1])
+    sns.distplot(male_df['Net Tim(s)'], hist=True, kde=True, color='blue', label='Net Tim(s)',
+             ax=ax[0, 2])
+    sns.distplot(male_df['Pace(s)'], hist=True, kde=True, color='blue', label='Pace(s)',
+             ax=ax[1, 0])
+    sns.distplot(male_df['Diff Tim(s)'], hist=True, kde=True, color='blue', label='Diff Tim(s)',
+             ax=ax[1, 1])
+    fig.tight_layout()
+    plt.savefig("male_histogram_all.png")
+    #plt.show()
+
+    plt.figure()
+    fig, ax = plt.subplots(2, 3)
+    fig.suptitle("Female 2006 Pikes Peak 10K Race")
+    sns.distplot(female_df["Ag"], kde=True, color='blue', label='Age',
+             ax=ax[0, 0])
+    sns.distplot(female_df['Gun Tim(s)'], hist=True, kde=True, color='blue', label='Gun Tim(s)',
+             ax=ax[0, 1])
+    sns.distplot(female_df['Net Tim(s)'], hist=True, kde=True, color='blue', label='Net Tim(s)',
+             ax=ax[0, 2])
+    sns.distplot(female_df['Pace(s)'], hist=True, kde=True, color='blue', label='Pace(s)',
+             ax=ax[1, 0])
+    sns.distplot(female_df['Diff Tim(s)'], hist=True, kde=True, color='blue', label='Diff Tim(s)',
+             ax=ax[1, 1])
+    fig.tight_layout()
+    plt.savefig("female_histogram_all.png")
+    #plt.show()
 
 if __name__ == "__main__":
     filename_male = "MA_Exer_PikesPeak_Males.txt"
