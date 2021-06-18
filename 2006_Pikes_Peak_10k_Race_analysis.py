@@ -4,9 +4,6 @@ import pandas as pd
 import re
 import matplotlib.pyplot as plt
 import seaborn as sns
-import numpy as np
-
-np.random.seed(9876789)
 
 pd.set_option('display.max_columns', None)
 pd.set_option('max_colwidth', None)
