@@ -12,6 +12,8 @@ pd.set_option('display.float_format', lambda x: '%.2f' % x)
 
 sns.set_theme(style="ticks", palette="pastel")
 
+# Convert the times to a floating integer so the describe() function
+# works.
 def convert_to_seconds(elapsed_time):
     elapsed_time_split = elapsed_time.split(':')
     if (len(elapsed_time_split) == 3):
@@ -21,6 +23,8 @@ def convert_to_seconds(elapsed_time):
     else:
         return "N/A"
 
+# Since the data is separated into gender, we can assign each 
+# individual a division letter by age to see the performances of each division.
 def get_division(age):
     if age >= 0 and age <= 14:
         return "A"
@@ -45,6 +49,7 @@ def get_division(age):
     elif age >=100 and age <= 110:
         return "K"
     
+# Add the range, 10%, 90%, and median to the describe output.
 def new_describe(df):
     df1 = df.describe()
     df1.loc["range"] = df1.loc['max'] - df1.loc['min']
@@ -58,6 +63,9 @@ def new_describe(df):
 
     return df1
 
+# Add the range, 10%, 90%, and median to the describe output per division.
+# NOTE: It needs a seprate describe because using the groupby gives an output that
+# fails the loc lookup above since the stats are in the columns instead of the rows.
 def new_describe2(df):
     df1 = df.describe()
     df1["range"] = df1['max'] - df1['min']
@@ -71,9 +79,12 @@ def new_describe2(df):
 
     return df1
 
+# Helper function to reorder the describe output above for the additional stats 
+# for cleanability.
 def reorder_list(data, order):
     return [data[i] for i in order]
 
+# Helper function to create boxplots and declutter the code.
 def boxplot(data, x, y, order, title, savefn):
     plt.figure()
     ax = sns.boxplot(x=x, y=y, palette=["m", "g"], order=order, data=data)
@@ -83,6 +94,7 @@ def boxplot(data, x, y, order, title, savefn):
     plt.savefig(savefn)
     #plt.show()
 
+# Main function to be called when running the script.
 def main(file_male, file_female):
     male_df = pd.read_csv(file_male, sep='\t', lineterminator='\r')
     female_df = pd.read_csv(file_female, sep='\t', lineterminator='\r')
@@ -236,11 +248,13 @@ def main(file_male, file_female):
 
     print("---------Plots--------")
     print()
+    # Create boxplots for Net Tim(s) and Pace for both males and females.
     boxplot(male_df, 'Div', 'Net Tim(s)', ['A','B','C','D','E','F','G','H','I'], "Boxplot for Male Net Tim(s)", "male_boxplot_net_time.png")
     boxplot(male_df, 'Div', 'Pace(s)', ['A','B','C','D','E','F','G','H','I'], "Boxplot for Male Pace(s)", "male_boxplot_pace_time.png")
     boxplot(female_df, 'Div', 'Net Tim(s)', ['A','B','C','D','E','F','G','H'], "Boxplot for Female Net Tim(s)", "female_boxplot_net_time.png")
     boxplot(female_df, 'Div', 'Pace(s)', ['A','B','C','D','E','F','G','H'], "Boxplot for Female Pace(s)", "female_boxplot_pace_time.png")
 
+    # Create a series of histograms for the various variables for the male dataset.
     plt.figure()
     fig, ax = plt.subplots(2, 3)
     fig.suptitle("Male 2006 Pikes Peak 10K Race")
@@ -258,6 +272,7 @@ def main(file_male, file_female):
     plt.savefig("male_histogram_all.png")
     #plt.show()
 
+    # Create a series of histograms for the various variables for the female dataset.
     plt.figure()
     fig, ax = plt.subplots(2, 3)
     fig.suptitle("Female 2006 Pikes Peak 10K Race")
