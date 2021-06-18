@@ -53,8 +53,9 @@ def new_describe(df):
     df1.loc["range"] = df1.loc['max'] - df1.loc['min']
     df1.loc["10%"] = df.quantile(.1)
     df1.loc["90%"] = df.quantile(.9)
+    df1.loc["median"] = df.median()
 
-    reorder_list = ["count", "mean", "std", "min", "10%", "25%", "50%", "75%", "90%", "max", "range"]
+    reorder_list = ["count", "mean", "median", "std", "min", "10%", "25%", "50%", "75%", "90%", "max", "range"]
     #df1 = df1.reindex(reorder_list)
     df1 = df1.loc[reorder_list]
 
@@ -65,9 +66,10 @@ def new_describe2(df):
     df1["range"] = df1['max'] - df1['min']
     df1["10%"] = df.quantile(.1)
     df1["90%"] = df.quantile(.9)
+    df1["median"] = df.median()
 
     cols = df1.columns.to_list()
-    cols = reorder_list(cols, [0,1,2,3,9,4,5,6,10,7,8])
+    cols = reorder_list(cols, [0,1,11,2,3,9,4,5,6,10,7,8])
     df1 = df1[cols]
 
     return df1
